@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{c7318570-4811-4024-bc6b-c63039745a3d}</ProjectGuid>
-    <RootNamespace>MAPIAsServiceTest</RootNamespace>
+    <RootNamespace>MAPITest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>MAPITest</ProjectName>
   </PropertyGroup>
