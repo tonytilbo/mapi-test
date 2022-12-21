@@ -289,7 +289,7 @@ int MAPITest()
 	{
 		// Create log file
 		log("Creating log file\n");
-		logFile.open("c:\\temp\\mapitest.log", ios::out);
+		logFile.open("MAPITest Log.txt", ios::out);
 		if (!logFile)
 			log("Failed to create log file\n");
 
