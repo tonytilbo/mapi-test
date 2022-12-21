@@ -66,7 +66,7 @@ enum { EID, EMAIL_ADDRESS, DISPLAY_NAME, DEFAULT_STORE, NUM_COLS };
 
 STDMETHODIMP ListMessages(
 	LPMDB lpMDB,
-	LPMAPIFOLDER lpInboxFolder)
+	LPMAPIFOLDER lpMessageFolder)
 {
 	HRESULT hRes = S_OK;
 	LPMAPITABLE lpContentsTable = NULL;
@@ -88,7 +88,8 @@ STDMETHODIMP ListMessages(
 		PR_ENTRYID
 	};
 
-	hRes = lpInboxFolder->GetContentsTable(
+	log("Attempting to list items in folder\n");
+	hRes = lpMessageFolder->GetContentsTable(
 		0,
 		&lpContentsTable);
 	if (FAILED(hRes))
@@ -117,7 +118,7 @@ STDMETHODIMP ListMessages(
 		LPSPropValue lpProp = NULL;
 
 		if (PR_SUBJECT == pRows->aRow[i].lpProps[ePR_SUBJECT].ulPropTag)
-			log("Message subject: ", pRows->aRow[i].lpProps[ePR_SUBJECT].Value.lpszW);
+			log("Item subject: ", pRows->aRow[i].lpProps[ePR_SUBJECT].Value.lpszW);
 
 		hRes = lpMDB->OpenEntry(
 			pRows->aRow[i].lpProps[ePR_ENTRYID].Value.bin.cb,
@@ -320,7 +321,7 @@ int MAPITest()
 								ProcessMessageStore(rows->aRow[i]);
 							}
 							else
-								log("Additional message store: ", rows->aRow[i].lpProps[DISPLAY_NAME].Value.lpszW);
+								log("Message store: ", rows->aRow[i].lpProps[DISPLAY_NAME].Value.lpszW);
 						}
 					}
 					if (rows) FreeProws(rows);
