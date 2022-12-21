@@ -131,7 +131,7 @@ STDMETHODIMP ListMessages(
 		hRes = lpMDB->OpenEntry(
 			pRows->aRow[i].lpProps[ePR_ENTRYID].Value.bin.cb,
 			(LPENTRYID)pRows->aRow[i].lpProps[ePR_ENTRYID].Value.bin.lpb,
-			NULL,//default interface
+			NULL, // default interface
 			MAPI_BEST_ACCESS,
 			&ulObjType,
 			(LPUNKNOWN*)&lpMessage);
@@ -139,7 +139,7 @@ STDMETHODIMP ListMessages(
 		if (!FAILED(hRes))
 		{
 			// We've opened the message
-
+			// We don't do anything further at this point, but the message can be accessed using lpMessage
 		}
 		else
 			logError("OpenEntry error: ", hRes);
