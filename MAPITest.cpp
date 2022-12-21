@@ -64,6 +64,14 @@ void logError(string data, HRESULT hr, LPWSTR lpszW)
 
 enum { EID, EMAIL_ADDRESS, DISPLAY_NAME, DEFAULT_STORE, NUM_COLS };
 
+// Following adapted from https://learn.microsoft.com/en-us/outlook/troubleshoot/development/how-to-list-messages-in-inbox-with-mapi
+
+/// <summary>
+/// List the subject of each item found in the given folder
+/// </summary>
+/// <param name="lpMDB">Message store</param>
+/// <param name="lpMessageFolder">Folder</param>
+/// <returns>HRESULT</returns>
 STDMETHODIMP ListMessages(
 	LPMDB lpMDB,
 	LPMAPIFOLDER lpMessageFolder)
@@ -101,8 +109,8 @@ STDMETHODIMP ListMessages(
 	hRes = HrQueryAllRows(
 		lpContentsTable,
 		(LPSPropTagArray)&sptCols,
-		NULL,//restriction...we're not using this parameter
-		NULL,//sort order...we're not using this parameter
+		NULL, // restriction...we're not using this parameter
+		NULL, // sort order...we're not using this parameter
 		0,
 		&pRows);
 	if (FAILED(hRes))
@@ -147,8 +155,12 @@ quit:
 	return hRes;
 }
 
-
-// Following adapted from https://learn.microsoft.com/en-us/outlook/troubleshoot/development/how-to-list-messages-in-inbox-with-mapi
+/// <summary>
+/// Attempt to open the receive folder for the given message store
+/// </summary>
+/// <param name="lpMDB">The message store</param>
+/// <param name="lpInboxFolder">Receive folder (if found)</param>
+/// <returns>HRESULT</returns>
 STDMETHODIMP OpenInbox(
 	LPMDB lpMDB,
 	LPMAPIFOLDER* lpInboxFolder)
@@ -204,6 +216,11 @@ quit:
 	return hRes;
 }
 
+/// <summary>
+/// Process the specified message store (attempts to open store and then list messages in default receive folder)
+/// </summary>
+/// <param name="storeInfoRow">SRow from stores table containing message store info (e.g. EntryId)</param>
+/// <returns>HRESULT</returns>
 HRESULT ProcessMessageStore(SRow storeInfoRow)
 {
 	LPMDB       pMDB = NULL;
@@ -254,6 +271,10 @@ HRESULT ProcessMessageStore(SRow storeInfoRow)
 	return hr;
 }
 
+/// <summary>
+/// Initialise MAPI, log on and read the message store table
+/// </summary>
+/// <returns>0 if successful, error code otherwise</returns>
 int MAPITest()
 {
 	int nRetCode = 0;
@@ -342,6 +363,10 @@ int MAPITest()
 	return nRetCode;
 }
 
+/// <summary>
+/// Main entry point
+/// </summary>
+/// <returns>0 if successful, error code otherwise</returns>
 int main()
 {
 	return MAPITest();
