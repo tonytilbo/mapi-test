@@ -73,6 +73,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\Office 2010 Developer Resources\Outlook 2010 MAPI Headers;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\tony.tilbury\work\code\Samples\MAPITest\bin\x64\mapistub\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\Office 2010 Developer Resources\Outlook 2010 MAPI Headers;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\tony.tilbury\work\code\Samples\MAPITest\bin\Win32\mapistub\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,6 +142,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MAPITest.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MAPIStubLibrary\mapistub.vcxproj">
+      <Project>{acd4dd9f-0fb8-42c8-bc1c-25a5a29cb40c}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

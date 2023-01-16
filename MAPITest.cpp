@@ -20,7 +20,7 @@ using namespace std;
 #include <tchar.h>
 #include <locale>
 #include <codecvt>
-
+#include <initguid.h>
 #define USES_IID_IMAPIFolder
 #define USES_IID_IMAPITable
 #include <Mapix.h>
@@ -30,6 +30,93 @@ using namespace std;
 fstream logFile;
 LPMAPISESSION lpSession = NULL;
 
+enum CCSFLAGS
+{
+	CCSF_SMTP = 0x00000002, // the converter is being passed an SMTP message
+	CCSF_NOHEADERS = 0x00000004, // the converter should ignore the headers on the outside message
+	CCSF_USE_TNEF = 0x00000010, // the converter should embed TNEF in the MIME message
+	CCSF_INCLUDE_BCC = 0x00000020, // the converter should include Bcc recipients
+	CCSF_8BITHEADERS = 0x00000040, // the converter should allow 8 bit headers
+	CCSF_USE_RTF = 0x00000080, // the converter should do HTML->RTF conversion
+	CCSF_PLAIN_TEXT_ONLY = 0x00001000, // the converter should just send plain text
+	CCSF_NO_MSGID = 0x00004000, // don't include Message-Id from MAPI message in outgoing messages create a new one
+	CCSF_EMBEDDED_MESSAGE = 0x00008000, // We're translating an embedded message
+	CCSF_PRESERVE_SOURCE =
+	0x00040000, // The convertor should not modify the source message so no conversation index update, no message id, and no header dump.
+	CCSF_GLOBAL_MESSAGE = 0x00200000, // The converter should build an international message (EAI/RFC6530)
+};
+
+// http://msdn2.microsoft.com/en-us/library/bb905202.aspx
+typedef
+enum tagENCODINGTYPE
+{
+	IET_BINARY = 0,
+	IET_BASE64 = IET_BINARY + 1,
+	IET_UUENCODE = IET_BASE64 + 1,
+	IET_QP = IET_UUENCODE + 1,
+	IET_7BIT = IET_QP + 1,
+	IET_8BIT = IET_7BIT + 1,
+	IET_INETCSET = IET_8BIT + 1,
+	IET_UNICODE = IET_INETCSET + 1,
+	IET_RFC1522 = IET_UNICODE + 1,
+	IET_ENCODED = IET_RFC1522 + 1,
+	IET_CURRENT = IET_ENCODED + 1,
+	IET_UNKNOWN = IET_CURRENT + 1,
+	IET_BINHEX40 = IET_UNKNOWN + 1,
+	IET_LAST = IET_BINHEX40 + 1
+} 	ENCODINGTYPE;
+typedef
+enum tagMIMESAVETYPE
+{
+	SAVE_RFC822 = 0,
+	SAVE_RFC1521 = SAVE_RFC822 + 1
+} 	MIMESAVETYPE;
+typedef const struct HCHARSET__* HCHARSET;
+
+typedef HCHARSET* LPHCHARSET;
+typedef
+enum tagCSETAPPLYTYPE
+{
+	CSET_APPLY_UNTAGGED = 0,
+	CSET_APPLY_ALL = CSET_APPLY_UNTAGGED + 1,
+	CSET_APPLY_TAG_ALL = CSET_APPLY_ALL + 1
+} 	CSETAPPLYTYPE;
+
+interface IConverterSession : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SetAdrBook(LPADRBOOK pab);
+
+	virtual HRESULT STDMETHODCALLTYPE SetEncoding(ENCODINGTYPE et);
+
+	virtual HRESULT PlaceHolder1();
+
+	virtual HRESULT STDMETHODCALLTYPE MIMEToMAPI(LPSTREAM pstm, LPMESSAGE pmsg, LPCSTR pszSrcSrv, ULONG ulFlags);
+
+	virtual HRESULT STDMETHODCALLTYPE MAPIToMIMEStm(LPMESSAGE pmsg, LPSTREAM pstm, ULONG ulFlags);
+
+	virtual HRESULT PlaceHolder2();
+	virtual HRESULT PlaceHolder3();
+	virtual HRESULT PlaceHolder4();
+
+	virtual HRESULT STDMETHODCALLTYPE SetTextWrapping(bool fWrapText, ULONG ulWrapWidth);
+
+	virtual HRESULT STDMETHODCALLTYPE SetSaveFormat(MIMESAVETYPE mstSaveFormat);
+
+	virtual HRESULT PlaceHolder5();
+
+	virtual HRESULT STDMETHODCALLTYPE SetCharset(bool fApply, HCHARSET hcharset, CSETAPPLYTYPE csetapplytype);
+};
+
+typedef IConverterSession* LPCONVERTERSESSION;
+
+// Class Identifiers
+// {4e3a7680-b77a-11d0-9da5-00c04fd65685}
+DEFINE_GUID(CLSID_IConverterSession, 0x4e3a7680, 0xb77a, 0x11d0, 0x9d, 0xa5, 0x0, 0xc0, 0x4f, 0xd6, 0x56, 0x85);
+
+// Interface Identifiers
+// {4b401570-b77b-11d0-9da5-00c04fd65685}
+DEFINE_GUID(IID_IConverterSession, 0x4b401570, 0xb77b, 0x11d0, 0x9d, 0xa5, 0x0, 0xc0, 0x4f, 0xd6, 0x56, 0x85);
 
 void log(string data)
 {
@@ -63,6 +150,48 @@ void logError(string data, HRESULT hr, LPWSTR lpszW)
 }
 
 enum { EID, EMAIL_ADDRESS, DISPLAY_NAME, DEFAULT_STORE, NUM_COLS };
+
+// Testing the IConverterSession MAPItoMIMEStm
+STDMETHODIMP ConvertMessage(LPMESSAGE lpMessage)
+{
+	LPCONVERTERSESSION lpConverterSession = NULL;
+	LPSTREAM lpEMLStm = NULL;
+	HRESULT hr;
+
+	if (FAILED(hr = CoCreateInstance(CLSID_IConverterSession, NULL, CLSCTX_INPROC_SERVER, IID_IConverterSession, reinterpret_cast<LPVOID*>(&lpConverterSession))))
+	{
+		logError("Failed to create IConverterSession", hr);
+		return hr;
+	}
+
+	if (FAILED(hr = lpConverterSession->SetEncoding(IET_QP)))
+	{
+		logError("Failed to set encoding type", hr);
+		return hr;
+	}
+	if (FAILED(hr = lpConverterSession->SetSaveFormat(SAVE_RFC1521)))
+	{
+		logError("Failed to set save format", hr);
+		return hr;
+	}
+
+	// Create a stream to write the EML to
+	if (FAILED(hr = CreateStreamOnHGlobal(NULL, true, &lpEMLStm)))
+	{
+		logError("Failed to create ouput stream", hr);
+		return hr;
+	}
+	// Call MAPI to MIME conversion
+	ULONG ccsFlags = CCSF_SMTP;
+
+	if (FAILED(hr = lpConverterSession->MAPIToMIMEStm(lpMessage, lpEMLStm, ccsFlags)))
+	{
+		logError("MAPItoMIMEStm call failed", hr);
+		return hr;
+	}
+
+	return S_OK;
+}
 
 // Following adapted from https://learn.microsoft.com/en-us/outlook/troubleshoot/development/how-to-list-messages-in-inbox-with-mapi
 
@@ -119,7 +248,8 @@ STDMETHODIMP ListMessages(
 		goto quit;
 	}
 
-	for (i = 0; i < pRows->cRows; i++)
+	// Get the first message only
+	for (i = 0; i < 1; i++)
 	{
 		LPMESSAGE lpMessage = NULL;
 		ULONG ulObjType = NULL;
@@ -140,6 +270,7 @@ STDMETHODIMP ListMessages(
 		{
 			// We've opened the message
 			// We don't do anything further at this point, but the message can be accessed using lpMessage
+			ConvertMessage(lpMessage);
 		}
 		else
 			logError("OpenEntry error: ", hRes);
@@ -278,7 +409,7 @@ HRESULT ProcessMessageStore(SRow storeInfoRow)
 int MAPITest()
 {
 	int nRetCode = 0;
-	HRESULT hRes = 0;
+	HRESULT hRes = 0, hr=0;
 	LPWSTR lpszProfile = NULL;
 
 	log("Initialising MAPI test\n");
@@ -312,7 +443,6 @@ int MAPITest()
 			else
 			{
 				log("MAPILogonEx succeeded\n");
-
 				// Retrieve list of message stores
 				LPMAPITABLE pStoresTbl = NULL;
 				SizedSPropTagArray(NUM_COLS, sptCols) = { NUM_COLS, PR_ENTRYID, PR_EMAIL_ADDRESS, PR_DISPLAY_NAME, PR_DEFAULT_STORE };
